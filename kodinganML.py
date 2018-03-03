@@ -8,6 +8,7 @@ Created on Fri Mar  2 14:11:45 2018
 import pandas as pd
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 global hnya
 global nsigm
@@ -17,14 +18,21 @@ global tetab2
 global tetab3
 global tetab4
 global biasb
+global bias 
+global alpha 
+
+bias= 0.2
+alpha= 0.1
 mdteta = np.zeros(shape=(4,1))
 mtetab = np.zeros(shape=(4,1))
+mtotalerror= np.zeros(shape=(100,1))
+mtotalfullerror= np.zeros(shape=(60,1))
 
 dataframe = pd.read_csv("./data.csv")
 dataframe = dataframe['teta'].str.split(',', expand=True)
 d = {'teta1': [0.2], 'teta2': [0.1], 'teta3': [0.5], 'teta4': [0.3]}
-bias = 0.2
-alpha = 0.1
+
+
 teta = pd.DataFrame(data=d)
 
 dataframe[4] = dataframe[4].str.replace('Iris-setosa', '1')
@@ -72,12 +80,15 @@ def biasbaru(bias,alpha,deltabias):
     print ("biasbaru" ,(bias-(alpha*deltabias)))
     return (bias-(alpha*deltabias))
 
-def gantiteta(tetabaru):
-    teta = tetabaru
-
-def gantiteta(biasbaru):
-    biasb = tetabaru
+def gantibias(mbias):
+    bias = mbias
     
+def jumlahtotalerrorepoch(merror,x):
+    mtotalerror[x]=merror.copy()
+
+def jumlahtotalerrorfull(totalerrortiapepoch,x):
+    mtotalfullerror[x]=totalerrortiapepoch.copy()
+
 def perhitunganepoch(dataframe):
     for i in range(len(dataframe)):
         msigm = perhitungansigmsaturow(i,bias)
@@ -89,14 +100,30 @@ def perhitunganepoch(dataframe):
         while(y < len(teta.columns)):
             mdteta[y] = perhitungandeltax(msigm,dataframe.iloc[i, 4],i,y)
             mtetab[y] = tetabaru(teta.iloc[0, y],alpha,mdteta[y])
-            print (y)
             y = y+1
+        y = 0
         while(y < len(teta.columns)):
-            teta.iloc[0, y]= mtetab[y]
-        dataframe.iloc[i, 4] = biasbaru(bias,alpha,mdbias)
+            teta.iloc[0, y]= mtetab[y].copy()
+            y = y+1
+        mbiasb = biasbaru(bias,alpha,mdbias)
+        gantibias(mbiasb)
+        jumlahtotalerrorepoch(merror,i)
+        
 
 def perhitunganfull(berapakali):
+    
     for i in range(berapakali):
         perhitunganepoch(dataframe)
+        jumlahtotalerrorfull(sum(mtotalerror),i)
+    
+        
+    for i in range(len(mtotalfullerror)):
+        print("totalerror = " , i ,"= " ,mtotalfullerror[i])
+        
+    plt.plot(mtotalfullerror)
+    plt.ylabel('error')
+    plt.xlabel('epoch')
+    plt.show()
+
 
 perhitunganfull(60)
