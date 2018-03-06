@@ -10,30 +10,20 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-bias= 0.2
+bias= 0.7
 alpha= 0.1
 mdteta = np.zeros(shape=(4,1))
 mtetab = np.zeros(shape=(4,1))
 mtotalerror= np.zeros(shape=(100,1))
+mtotalerror2= np.zeros(shape=(100,1))
 mtotalfullerror= np.zeros(shape=(60,1))
+mtotalfullerror2= np.zeros(shape=(60,1))
 mtotalfullerrortrain= np.zeros(shape=(60,1))
 mtotalfullerrorvalid= np.zeros(shape=(60,1))
 
-# =============================================================================
-# num_lines = sum(1 for line in open('./data.csv'))
-# exclude1 = [i for i in num_lines if i not in index_list]
-# dataframe = pd.read_csv("./data.csv",skiprows=exclude1)
-# 
-# num_lines = sum(1 for line in open('./data.csv'))
-# exclude2 = [i for i in num_lines if i not in index_list]
-# datatrain = pd.read_csv("./data.csv",skiprows=exclude2)
-# 
-# datavalidasi = pd.read_csv("./data.csv")
-# =============================================================================
-
 dataframe = pd.read_csv("./data.csv")
 dataframe = dataframe['teta'].str.split(',', expand=True)
-d = {'teta1': [0.2], 'teta2': [0.1], 'teta3': [0.5], 'teta4': [0.3]}
+d = {'teta1': [0.3], 'teta2': [0.6], 'teta3': [0.9], 'teta4': [0.2]}
 
 teta = pd.DataFrame(data=d)
 
@@ -68,7 +58,6 @@ def sigm(hasilh):
    
    
 def perhitungansigmsaturow(x,bias):
-    nsigm = sigm(h(perhitunganxteta(x),bias))
     return sigm(h(perhitunganxteta(x),bias))
    
 def error(kelas,sigm):
@@ -81,42 +70,40 @@ def prediksi(msigm):
         return 1
     
 def perhitungandeltax(sigmoid,kelas,x,y):
-    print ("delta", x, y , "= " ,(2*(sigmoid- kelas)*(1-sigmoid)*sigmoid*dataframe.iloc[x, y]))
     return (2*(sigmoid- kelas)*(1-sigmoid)*sigmoid*dataframe.iloc[x, y])
 
 def perhitungandeltabias(sigmoid,kelas):
-    print ("delta bias" ,(2*(sigmoid- kelas)*(1-sigmoid)*sigmoid))
     return (2*(sigmoid- kelas)*(1-sigmoid)*sigmoid)
 
 def tetabaru(teta,alpha,deltateta):
-    print ("tetabaru" ,(teta-(alpha*deltateta)))
     return (teta-(alpha*deltateta))
   
 def biasbaru(bias,alpha,deltabias):
-    print ("biasbaru" ,(bias-(alpha*deltabias)))
     return (bias-(alpha*deltabias))
 
 def gantibias(mbias):
-    bias = mbias
+    bias = mbias.copy()
     
 def jumlahtotalerrorepoch(merror,x):
     mtotalerror[x]=merror.copy()
+    
+def jumlahtotalerrorepoch2(merror2,x):
+    mtotalerror2[x]=merror2.copy()
 
 def jumlahtotalerrorfull(totalerrortiapepoch,x):
     mtotalfullerror[x]=totalerrortiapepoch.copy()
     
-def kosongintotalerrorfull():
-    mtotalfullerror=np.zeros(shape=(60,1))
-    mdteta = np.zeros(shape=(4,1))
-    mtetab = np.zeros(shape=(4,1))
+def jumlahtotalerrorfull2(totalerrortiapepoch2,x):
+    mtotalfullerror2[x]=totalerrortiapepoch2.copy()
 
-def perhitunganepoch(dataframe):
+
+def perhitunganepoch(dataframe,datavalidasi):
     for i in range(len(dataframe)):
         msigm = perhitungansigmsaturow(i,bias)
         merror = error(dataframe.iloc[i, 4],msigm)
         mprediksi = prediksi(msigm)
         mdbias = perhitungandeltabias(msigm,dataframe.iloc[i, 4])
-        print ("sigmoid = ",msigm, " error = ", merror, " prediksi = ", mprediksi)
+        print (" TRAIN sigmoid = ",msigm, " error = ", merror, " prediksi = ", mprediksi)
         y = 0
         while(y < len(teta.columns)):
             mdteta[y] = perhitungandeltax(msigm,dataframe.iloc[i, 4],i,y)
@@ -129,30 +116,25 @@ def perhitunganepoch(dataframe):
         mbiasb = biasbaru(bias,alpha,mdbias)
         gantibias(mbiasb)
         jumlahtotalerrorepoch(merror,i)
+        
+        msigm2 = perhitungansigmsaturow(i,bias)
+        merror2 = error(dataframe.iloc[i, 4],msigm2)
+        mprediksi2 = prediksi(msigm2)
+        print (" VALID sigmoid = ",msigm2, " error = ", merror2, " prediksi = ", mprediksi2)
+        jumlahtotalerrorepoch2(merror2,i)
 
 
 def perhitunganfull(berapakali,data,datavalid):
     
     for i in range(berapakali):
-        perhitunganepoch(data)
-        jumlahtotalerrorfull(sum(mtotalerror),i)
+        perhitunganepoch(data,datavalid)
+        jumlahtotalerrorfull(sum(mtotalerror)/len(mtotalerror),i)
+        jumlahtotalerrorfull2(sum(mtotalerror2)/len(mtotalerror2),i)
         mtotalfullerrortrain = mtotalfullerror.copy()
-# =============================================================================
-#     for i in range(len(mtotalfullerror)):
-#         print("totalerror = " , i ,"= " ,mtotalfullerror[i])
-# =============================================================================
-    kosongintotalerrorfull()
-    for i in range(berapakali):
-        perhitunganepoch(datavalid)
-        jumlahtotalerrorfull(sum(mtotalerror),i)
-        mtotalfullerrorvalid = mtotalfullerror.copy()
-# =============================================================================
-#     for i in range(len(mtotalfullerror)):
-#         print("totalerror = " , i ,"= " ,mtotalfullerror[i])
-# =============================================================================
+        mtotalfullerrorvalid = mtotalfullerror2.copy()
         
     plt.plot(mtotalfullerrortrain)
-    plt.plot(mtotalfullerrorvalid)
+    plt.plot(mtotalfullerrorvalid,color="green")
     plt.ylabel('error')
     plt.xlabel('epoch')
     plt.show()
